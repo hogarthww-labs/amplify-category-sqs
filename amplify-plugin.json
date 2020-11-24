@@ -1,0 +1,9 @@
+{
+    "name": "sqs",
+    "type": "custom",
+    "commands": [
+        "add",
+        "help",
+        "remove"
+    ]
+}

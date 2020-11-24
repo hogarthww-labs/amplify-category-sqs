@@ -1,0 +1,64 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Queue resource stack creation using Amplify CLI",
+  "Parameters": {
+      "env": {
+          "Type": "String"
+      }
+  },
+  "Conditions": {
+      "ShouldNotCreateEnvResources": {
+          "Fn::Equals": [
+              {
+                  "Ref": "env"
+              },
+              "NONE"
+          ]
+      }
+  },
+  "Resources": {
+      "<name>": {
+          "Type": "AWS::SQS::Queue",
+          "Properties": {
+              "QueueName": {
+                  "Fn::If": [
+                      "ShouldNotCreateEnvResources",
+                      "<NAME>",
+                      {
+                          "Fn::Join": [
+                              "",
+                              [
+                                  "<NAME>",
+                                  "-",
+                                  {
+                                      "Ref": "env"
+                                  }
+                              ]
+                          ]
+                      }
+                  ]
+              }
+          }
+      }
+  },
+  "Outputs": {
+      "Name": {
+          "Value": {
+              "Ref": "<name>"
+          }
+      },
+      "Arn": {
+          "Value": {
+              "Fn::GetAtt": [
+                  "<NAME>",
+                  "Arn"
+              ]
+          }
+      },
+      "Region": {
+          "Value": {
+              "Ref": "AWS::Region"
+          }
+      }
+  }
+}
