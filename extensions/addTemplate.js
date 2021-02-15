@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { copyFilesToS3 } = require('./helpers/template-staging');
-const { getProjectName, generateQuestions, askLocationQuestions } = require('./helpers/template-question');
+const { getName, generateQuestions, askLocationQuestions } = require('./helpers/template-question');
 const { yamlParse, yamlDump } = require('yaml-cfn');
 
 module.exports = (context) => {
@@ -16,13 +16,13 @@ async function createTemplate(context){
         providerPlugin: 'awscloudformation',
     };
 
-    let name = await getProjectName(context);
+    let name = await getName(context);
     let props = await askLocationQuestions();
-    props.projectName = name;
+    props.name = name;
+    props.className = name.toUpperCase()
     props.options = options;
     props.root = path.join(__dirname, 'templates/sqs-template.json')
-
-    prepareCloudFormation(context,props);
+    prepareCloudFormation(context, props);
 }
 
 async function prepareCloudFormation(context, props){
@@ -39,25 +39,22 @@ async function prepareCloudFormation(context, props){
     await stageRoot(context, props);
 }
 
-function replaceTemplateName(rootTemplate, props) {
-    rootTemplate = rootTemplate.replace('<name>', props.projectName)
-    rootTemplate = rootTemplate.replace('<NAME>', props.projectName.toUpperCase())
-    return rootTemplate    
+function renderTemplate(rootTemplate, props) {
+    return ejs.render(rootTemplate, props);
 }
-
 
 async function handleYAML(context, props){
     let rootTemplate = yamlParse(fs.readFileSync(props.root,'utf8'));
-    rootTemplate = await prepareTemplate(context, props, rootTemplate);
-    rootTemplate = replaceTemplateName(rootTemplate, props)
+    rootTemplate = renderTemplate(rootTemplate, props)
+    rootTemplate = await prepareTemplate(context, props, rootTemplate);    
     rootTemplate = await generateQuestions(context, rootTemplate);
     fs.writeFileSync(props.root, yamlDump(rootTemplate, null, 4));
 }
 
 async function handleJSON(context, props){
     let rootTemplate = JSON.parse(fs.readFileSync(props.root));
-    rootTemplate = await prepareTemplate(context, props, rootTemplate);
-    rootTemplate = replaceTemplateName(rootTemplate, props)
+    rootTemplate = renderTemplate(rootTemplate, props)
+    rootTemplate = await prepareTemplate(context, props, rootTemplate);    
     rootTemplate = await generateQuestions(context, rootTemplate);
     fs.writeFileSync(props.root, JSON.stringify(rootTemplate, null, 4));
 }
@@ -81,10 +78,10 @@ async function prepareTemplate(context, props, rootTemplate){
             let urlSplit = rootTemplate.Resources[resource].Properties.TemplateURL.split('/');
             /* For making sure that we don't lose filenames */
             if (urlSplit.length == 0){
-                rootTemplate.Resources[resource].Properties.TemplateURL = "https://s3.amazonaws.com/" + targetBucket + "/amplify-cfn-templates/" + props.projectName + "/" + rootTemplate.Resources[resource].Properties.TemplateURL;
+                rootTemplate.Resources[resource].Properties.TemplateURL = "https://s3.amazonaws.com/" + targetBucket + "/amplify-cfn-templates/" + props.name + "/" + rootTemplate.Resources[resource].Properties.TemplateURL;
             } else {
                 let filename = urlSplit[urlSplit.length-1];
-                rootTemplate.Resources[resource].Properties.TemplateURL = "https://s3.amazonaws.com/" + targetBucket + "/amplify-cfn-templates/" + props.projectName + "/" + filename;
+                rootTemplate.Resources[resource].Properties.TemplateURL = "https://s3.amazonaws.com/" + targetBucket + "/amplify-cfn-templates/" + props.name + "/" + filename;
             }
         });
     }
@@ -98,12 +95,12 @@ async function stageRoot(context, props){
         {
           dir: '/',
           template: `${props.root}`,
-          target: `${targetDir}/sqs/${props.projectName}/${props.projectName}-sqs-template.${props.ending}`,
+          target: `${targetDir}/sqs/${props.name}/${props.name}-sqs-template.${props.ending}`,
         },
       ];
       context.amplify.updateamplifyMetaAfterResourceAdd(
         "sqs",
-        props.projectName,
+        props.name,
         props.options,
       );
       await context.amplify.copyBatch(context, copyJobs, props);

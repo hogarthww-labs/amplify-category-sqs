@@ -2,7 +2,7 @@ const questions = require('./questions.json');
 const inquirer = require('inquirer');
 const fs = require('fs');
 
-async function getProjectName(context){
+async function getName(context){
     const { amplify } = context;
     const inputs = questions.template.inputs;
     const nameProject = [
@@ -116,7 +116,7 @@ async function generateQuestions(context, rootTemplate){
 }
 
 module.exports = {
-    getProjectName,
+    getName,
     generateQuestions,
     askLocationQuestions
 }

@@ -17,18 +17,18 @@
       }
   },
   "Resources": {
-      "<name>": {
+      "<%= name %>": {
           "Type": "AWS::SQS::Queue",
           "Properties": {
               "QueueName": {
                   "Fn::If": [
                       "ShouldNotCreateEnvResources",
-                      "<NAME>",
+                      "<%= className %>",
                       {
                           "Fn::Join": [
                               "",
                               [
-                                  "<NAME>",
+                                  "<%= className %>",
                                   "-",
                                   {
                                       "Ref": "env"
@@ -44,13 +44,13 @@
   "Outputs": {
       "Name": {
           "Value": {
-              "Ref": "<name>"
+              "Ref": "<%= className %>"
           }
       },
       "Arn": {
           "Value": {
               "Fn::GetAtt": [
-                  "<NAME>",
+                  "<%= className %>",
                   "Arn"
               ]
           }
