@@ -21,7 +21,7 @@ async function createTemplate(context){
     props.name = name;
     props.className = name.toUpperCase()
     props.options = options;
-    props.root = path.join(__dirname, 'templates/sqs-template.json')
+    props.root = path.join(__dirname, 'templates/sqs-template.json.ejs')
     prepareCloudFormation(context, props);
 }
 
